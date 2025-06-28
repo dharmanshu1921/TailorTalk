@@ -1,0 +1,90 @@
+
+        /* General styling */
+        body {
+            background-color: #F0F2F6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Header styling */
+        .header {
+            background: linear-gradient(135deg, #4A6FA5, #6C8EBF);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0 0 10px 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        /* Chat container */
+        .chat-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            height: 65vh;
+            overflow-y: auto;
+        }
+        
+        /* Message bubbles */
+        .user-message {
+            background-color: #4A6FA5;
+            color: white;
+            border-radius: 15px 15px 0 15px;
+            padding: 10px 15px;
+            margin: 10px 0;
+            max-width: 80%;
+            float: right;
+            clear: both;
+        }
+        
+        .assistant-message {
+            background-color: #e9ecef;
+            color: #495057;
+            border-radius: 15px 15px 15px 0;
+            padding: 10px 15px;
+            margin: 10px 0;
+            max-width: 80%;
+            float: left;
+            clear: both;
+        }
+        
+        /* Input area */
+        .input-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+        
+        /* Buttons */
+        .stButton>button {
+            background-color: #4A6FA5 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 8px 20px !important;
+            font-weight: 500 !important;
+        }
+        
+        .stButton>button:hover {
+            background-color: #6C8EBF !important;
+        }
+        
+        /* Sidebar */
+        .sidebar .sidebar-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        /* Calendar preview */
+        .calendar-preview {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
