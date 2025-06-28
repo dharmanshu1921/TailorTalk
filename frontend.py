@@ -14,14 +14,32 @@ from datetime import datetime
 # Configuration
 # API_URL = os.getenv("API_URL", "http://localhost:8000")
 def load_client_secrets():
-    if 'GOOGLE_CLIENT_SECRETS' in st.secrets:
-        try:
-            return json.loads(st.secrets["GOOGLE_CLIENT_SECRETS"])
-        except Exception as e:
-            st.error("Invalid Google client secrets format")
+    """Load Google client secrets from Streamlit secrets"""
+    try:
+        # Try to get the secret directly
+        if 'GOOGLE_CLIENT_SECRETS' in st.secrets:
+            secret_value = st.secrets["GOOGLE_CLIENT_SECRETS"]
+            
+            # If it's a string, try to parse as JSON
+            if isinstance(secret_value, str):
+                try:
+                    return json.loads(secret_value)
+                except json.JSONDecodeError:
+                    # Try base64 decoding
+                    try:
+                        decoded = base64.b64decode(secret_value).decode("utf-8")
+                        return json.loads(decoded)
+                    except:
+                        st.error("Invalid Google client secrets format")
+                        st.stop()
+            # If it's already a dict, return directly
+            elif isinstance(secret_value, dict):
+                return secret_value
+        else:
+            st.error("GOOGLE_CLIENT_SECRETS not configured in secrets")
             st.stop()
-    else:
-        st.error("GOOGLE_CLIENT_SECRETS not configured in secrets")
+    except Exception as e:
+        st.error(f"Error loading secrets: {str(e)}")
         st.stop()
 
 CLIENT_SECRETS = load_client_secrets()
