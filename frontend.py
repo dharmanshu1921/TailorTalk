@@ -1,18 +1,13 @@
-API_URL = "https://tailortalk-chfg.onrender.com/"
 import streamlit as st
 import requests
-import os
 import json
 import time
-from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
 import base64
-from datetime import datetime
+from google_auth_oauthlib.flow import Flow
 
 # Configuration
-# API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = "https://tailortalk-chfg.onrender.com/"
+
 def load_client_secrets():
     """Load Google client secrets from Streamlit secrets"""
     try:
@@ -42,6 +37,7 @@ def load_client_secrets():
         st.error(f"Error loading secrets: {str(e)}")
         st.stop()
 
+# Load client secrets
 CLIENT_SECRETS = load_client_secrets()
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
@@ -61,11 +57,9 @@ st.set_page_config(
 # Custom CSS for minimal UI
 st.markdown("""
 <style>
-    /* Remove Streamlit default styles */
     .stApp { max-width: 800px; padding: 2rem; }
     .st-emotion-cache-1dp5vir { display: none; }
-    .stChatFloatingInputContainer { border: 1px solid #e0e0e0; border-radius: 12px; }
-    .stChatInput { padding: 12px 16px; }
+    .stChatInputContainer { border: 1px solid #e0e0e0; border-radius: 12px; }
     .stButton button { width: 100%; border-radius: 12px; background-color: #4285F4; }
     .stChatMessage { padding: 12px 16px; border-radius: 12px; }
     [data-testid="stChatMessageContent"] { padding: 0; }
@@ -87,6 +81,12 @@ st.markdown("""
     }
     .google-btn:hover { background-color: #3367D6; }
     .google-icon { margin-right: 12px; }
+    .error-box {
+        background-color: #ffebee;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 15px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,35 +108,58 @@ init_session_state()
 
 # Google Sign-In Functions
 def get_flow():
-    return Flow.from_client_config(
-        client_config=json.loads(CLIENT_SECRETS),
-        scopes=SCOPES,
-        redirect_uri="urn:ietf:wg:oauth:2.0:oob"
-    )
+    """Create OAuth flow with error handling"""
+    try:
+        return Flow.from_client_config(
+            client_config=CLIENT_SECRETS,
+            scopes=SCOPES,
+            redirect_uri="urn:ietf:wg:oauth:2.0:oob"
+        )
+    except Exception as e:
+        st.error(f"Failed to create authentication flow: {str(e)}")
+        st.stop()
 
 def get_authorization_url():
-    flow = get_flow()
-    return flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent"
-    )[0]
+    """Get Google auth URL"""
+    try:
+        flow = get_flow()
+        return flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+            prompt="consent"
+        )[0]
+    except Exception as e:
+        st.error(f"Failed to get authorization URL: {str(e)}")
+        st.stop()
 
 def get_credentials(code):
-    flow = get_flow()
-    flow.fetch_token(code=code)
-    return flow.credentials
+    """Exchange code for credentials"""
+    try:
+        flow = get_flow()
+        flow.fetch_token(code=code)
+        return flow.credentials
+    except Exception as e:
+        st.error(f"Authentication failed: {str(e)}")
+        return None
 
 def save_credentials(credentials):
-    st.session_state.credentials = {
-        "token": credentials.token,
-        "refresh_token": credentials.refresh_token,
-        "token_uri": credentials.token_uri,
-        "client_id": credentials.client_id,
-        "client_secret": credentials.client_secret,
-        "scopes": credentials.scopes
-    }
-    st.session_state.authenticated = True
+    """Save credentials to session state"""
+    if credentials:
+        st.session_state.credentials = {
+            "token": credentials.token,
+            "refresh_token": credentials.refresh_token,
+            "token_uri": credentials.token_uri,
+            "client_id": credentials.client_id,
+            "client_secret": credentials.client_secret,
+            "scopes": credentials.scopes
+        }
+        st.session_state.authenticated = True
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hi! I'm your AI scheduling assistant. How can I help you schedule or manage your calendar today?"}
+        ]
+        st.success("Successfully authenticated with Google!")
+        time.sleep(1.5)
+        st.rerun()
 
 # API communication
 def send_to_api(message):
@@ -147,15 +170,16 @@ def send_to_api(message):
     
     try:
         response = requests.post(
-            f"{API_URL}/chat",
+            f"{API_URL}chat",  # Fixed URL format
             json=payload,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
+            timeout=30
         )
         
         if response.status_code == 200:
             return response.json().get("response", "I didn't get a response from the assistant.")
         else:
-            return f"Error: {response.status_code} - {response.text}"
+            return f"API Error: {response.status_code} - {response.text}"
     
     except requests.exceptions.RequestException as e:
         return f"Connection error: {str(e)}"
@@ -170,20 +194,30 @@ def authentication_section():
     st.markdown("Connect your Google Calendar to get started")
     
     # Google Sign-In button
-    auth_url = get_authorization_url()
-    st.markdown(f"""
-    <a href='{auth_url}' target='_blank'>
-        <button class='google-btn'>
-            <div class='google-icon'>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                    <path fill="#fff" d="M12 5c1.65 0 3.17.59 4.35 1.65l2.35-2.35A11.93 11.93 0 0 0 12 0C7.4 0 3.36 2.7 1.29 6.65l2.7 2.1C5.1 6.4 8.25 4.5 12 4.5z"></path>
-                    <path fill="#fff" d="M12 12c0 1.45.5 2.8 1.4 3.8l2.1-2.1c-.7-.7-1.1-1.6-1.1-2.7 0-1.1.4-2 1.1-2.7l-2.1-2.1A5.96 5.96 0 0 0 12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6c3.3 0 6-2.7 6-6h-6z"></path>
-                </svg>
-            </div>
-            Sign in with Google
-        </button>
-    </a>
-    """, unsafe_allow_html=True)
+    try:
+        auth_url = get_authorization_url()
+        st.markdown(f"""
+        <a href='{auth_url}' target='_blank'>
+            <button class='google-btn'>
+                <div class='google-icon'>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                        <path fill="#fff" d="M12 5c1.65 0 3.17.59 4.35 1.65l2.35-2.35A11.93 11.93 0 0 0 12 0C7.4 0 3.36 2.7 1.29 6.65l2.7 2.1C5.1 6.4 8.25 4.5 12 4.5z"></path>
+                        <path fill="#fff" d="M12 12c0 1.45.5 2.8 1.4 3.8l2.1-2.1c-.7-.7-1.1-1.6-1.1-2.7 0-1.1.4-2 1.1-2.7l-2.1-2.1A5.96 5.96 0 0 0 12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6c3.3 0 6-2.7 6-6h-6z"></path>
+                    </svg>
+                </div>
+                Sign in with Google
+            </button>
+        </a>
+        """, unsafe_allow_html=True)
+    except:
+        st.markdown("""
+        <div class="error-box">
+            <h4>Authentication Unavailable</h4>
+            <p>Google authentication is currently unavailable.</p>
+            <p>Please try again later or contact support.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        return
     
     st.divider()
     
@@ -193,17 +227,9 @@ def authentication_section():
     
     if st.button("Authenticate", use_container_width=True):
         if code:
-            try:
-                credentials = get_credentials(code)
+            credentials = get_credentials(code)
+            if credentials:
                 save_credentials(credentials)
-                st.success("Successfully authenticated with Google!")
-                st.session_state.messages = [
-                    {"role": "assistant", "content": "Hi! I'm your AI scheduling assistant. How can I help you schedule or manage your calendar today?"}
-                ]
-                time.sleep(2)
-                st.rerun()
-            except Exception as e:
-                st.error(f"Authentication failed: {str(e)}")
         else:
             st.warning("Please enter an authorization code")
 
