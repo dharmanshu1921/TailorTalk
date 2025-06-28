@@ -11,7 +11,8 @@ import base64
 from datetime import datetime
 
 # Configuration
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+# API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = https://tailortalk-chfg.onrender.com/
 CLIENT_SECRETS = os.getenv("GOOGLE_CLIENT_SECRETS")
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
