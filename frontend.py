@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 # API_URL = os.getenv("API_URL", "http://localhost:8000")
-https://tailortalk-chfg.onrender.com/
+API_URL = "https://tailortalk-chfg.onrender.com/"
 
 # IMPORTANT: Handle environment variables for Streamlit Cloud
 def get_client_secrets():
