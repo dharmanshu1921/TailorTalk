@@ -37,6 +37,9 @@ def load_secrets(env_var):
         except:
             logger.exception(f"Error decoding {env_var}")
             return None
+    except TypeError:
+        # Handle case where value is already a dict
+        return value
 
 def initialize_credentials():
     global creds, service
@@ -57,10 +60,16 @@ def initialize_credentials():
         logger.error("No client secrets available")
         return False
     
+    # Verify client secrets structure
+    if "installed" not in client_secrets:
+        logger.error("Client secrets missing 'installed' key")
+        logger.error(f"Secrets structure: {list(client_secrets.keys())}")
+        return False
+    
     # 3. Generate new token via OAuth flow
     try:
         flow = InstalledAppFlow.from_client_config(
-            {"installed": client_secrets},
+            client_secrets,
             scopes
         )
         
