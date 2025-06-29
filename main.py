@@ -23,23 +23,32 @@ def health_check():
     return {"status": "ok", "message": "Service is running"}
 
 @app.post("/chat")
-async def chat_endpoint(request: ChatRequest):
-    session_id = request.session_id
-    user_message = request.message
+async def chat_endpoint(request: Request):
+    data = await request.json()
+    session_id = data.get("session_id")
+    user_message = data.get("message")
+    refresh_token = data.get("refresh_token")  # Added
 
-    # Initialize session if new
-    if session_id not in sessions:
-        sessions[session_id] = []
+    # Create credentials from refresh token
+    creds = Credentials(
+        token=None,
+        refresh_token=refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+        scopes=[
+            'https://www.googleapis.com/auth/calendar.events',
+            'https://www.googleapis.com/auth/calendar.readonly'
+        ]
+    )
+    
+    # Refresh token if needed
+    if creds.expired:
+        creds.refresh(Request())
+    
+    # Build service
+    service = build('calendar', 'v3', credentials=creds)
 
-    conversation = sessions[session_id]
-    conversation.append(HumanMessage(content=user_message))
-
-    try:
-        updated_conversation, assistant_response = process_message(conversation)
-        sessions[session_id] = updated_conversation
-        return ChatResponse(response=assistant_response)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
